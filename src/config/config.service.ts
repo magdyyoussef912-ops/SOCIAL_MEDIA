@@ -12,8 +12,11 @@ export const SALTROUNDS :number = Number(process.env.SALTROUNDS)
 export const EMAIL :string = process.env.EMAIL!
 export const PASSWORD :string = process.env.PASSWORD!
 export const REDIS_URL :string = process.env.REDIS_URL!
-export const REFRESH_TOKEN_KEY :string = process.env.REFRESH_TOKEN_KEY!
-export const ACCESS_TOKEN_KEY :string = process.env.ACCESS_TOKEN_KEY!
-export const PREFIX :string = process.env.PREFIX!
+export const REFRESH_TOKEN_KEY_USER :string = process.env.REFRESH_TOKEN_KEY_USER!
+export const REFRESH_TOKEN_KEY_ADMIN :string = process.env.REFRESH_TOKEN_KEY_ADMIN!
+export const ACCESS_TOKEN_KEY_ADMIN :string = process.env.ACCESS_TOKEN_KEY_ADMIN!
+export const ACCESS_TOKEN_KEY_USER :string = process.env.ACCESS_TOKEN_KEY_USER!
+export const PREFIX_ADMIN :string = process.env.PREFIX_ADMIN!
+export const PREFIX_USER :string = process.env.PREFIX_USER!
 export const CLIENT_ID :string = process.env.CLIENT_ID!
 

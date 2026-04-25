@@ -24,6 +24,6 @@ export const VerfiyToken = (
     {token:string,
         secretOrPublicKey: Secret | PublicKey,
         options?: VerifyOptions
-    })=>{
-    return jwt.verify(token,secretOrPublicKey,options)
+    }):JwtPayload=>{
+    return jwt.verify(token,secretOrPublicKey,options) as JwtPayload
 }

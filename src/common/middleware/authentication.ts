@@ -1,13 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "../utils/global-error-handler.js";
-import { ACCESS_TOKEN_KEY, PREFIX } from "../../config/config.service.js";
+import {  ACCESS_TOKEN_KEY_ADMIN, ACCESS_TOKEN_KEY_USER, PREFIX_ADMIN, PREFIX_USER } from "../../config/config.service.js";
 import { VerfiyToken } from "../utils/token.service.js";
 import userRepository from "../../DB/repositories/user.repository.js";
-import { get, revoked_token } from "../../DB/redis/redis.service.js";
+import redisService from "../service/redis.service.js";
 
-
-
-
+const userModel = new userRepository()
 
 
 export const Authentication = async (req:Request,res:Response,next:NextFunction)=>{
@@ -16,16 +14,26 @@ export const Authentication = async (req:Request,res:Response,next:NextFunction)
         throw new AppError("Token Not Found")
     }
     const [prefix,token] : string[] = authorization.split(" ")
-    if (prefix !== PREFIX) {
+    
+    if (!token) {
+        throw new AppError("token Not Found")
+    }
+
+    let ACCESS_TOKEN_KEY  = ""
+    if (prefix == PREFIX_USER) {
+        ACCESS_TOKEN_KEY = ACCESS_TOKEN_KEY_USER
+    } else if (prefix == PREFIX_ADMIN) {
+        ACCESS_TOKEN_KEY = ACCESS_TOKEN_KEY_ADMIN
+    }else {
         throw new AppError("inValid Prefix")
     }
-    const decoded  = VerfiyToken ({token:token!,secretOrPublicKey:ACCESS_TOKEN_KEY})
-    if (!decoded || typeof decoded !== "object" || !("id" in decoded)) {
+
+    const decoded  = VerfiyToken ({token,secretOrPublicKey:ACCESS_TOKEN_KEY})
+    if (!decoded?.id) {
         throw new AppError("inValid token payload")
     }
-    
 
-    const user =  await new userRepository().findOne({filter:{_id:decoded.id}})
+    const user =  await  userModel.findOne({filter:{_id:decoded.id,confirmed:true}})
     if (!user) {
         throw new AppError("User Not Found",409)
     }
@@ -34,10 +42,12 @@ export const Authentication = async (req:Request,res:Response,next:NextFunction)
         throw new AppError("inValid Token")
     }
 
-    const  revoked_token_value = await get(revoked_token({userId:decoded.id!,jti:decoded.jti! })) 
+    const  revoked_token_value = await redisService.get(redisService.revoked_token({userId:decoded.id!,jti:decoded.jti! })) 
     if (revoked_token_value) {
         throw new AppError("inValid Token revoked")
     }
+
+    // res.locals.user = user
 
     req.user = user
     req.decoded = decoded

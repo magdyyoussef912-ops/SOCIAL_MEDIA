@@ -17,7 +17,7 @@ export const sendEmail = async (
     },
     });
     const info = await transporter.sendMail({
-        from: `"SOCAIAL_APP" <${EMAIL}>`,
+        from: `"SOCIAL_APP" <${EMAIL}>`,
         ...mailOptions
     });
 

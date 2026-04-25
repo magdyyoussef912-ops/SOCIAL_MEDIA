@@ -1,11 +1,11 @@
 
-import { block_otp_key, get, Incr, max_otp_key, otp_key, setValue, ttl } from "../../../DB/redis/redis.service.js";
 import { AppError } from "../global-error-handler.js";
 import { generateOtp, sendEmail } from "./sendEmail.js";
 import { emailTemplate } from "./email.Template.js";
 import { Hash } from "../security/Hash.security.js";
 
-
+import RedisClient from "../../../common/service/redis.service.js"
+import { emailEnum } from "../../enum/user.enum.js";
 
 
 export const sendEmailOtp =async (
@@ -13,19 +13,19 @@ export const sendEmailOtp =async (
 )=>{
 
 
-        const is_Blocked = await get(block_otp_key({email}))
+        const is_Blocked = await RedisClient.get(RedisClient.block_otp_key({email}))
         if (is_Blocked !== null) {
             throw new AppError(`Blocked try again after 3 minutes`)
         }
     
-        const TTlValue = await ttl(otp_key({email,subject}))
+        const TTlValue = await RedisClient.ttl(RedisClient.otp_key({email,subject:subject as emailEnum}))
         if ( Number(TTlValue) > 0 && TTlValue !== undefined) {
             throw new AppError(`Can't send otp after ${TTlValue} seconds`);
         }
     
-        const max_tries  = await get(max_otp_key({email}))
+        const max_tries  = await RedisClient.get(RedisClient.max_otp_key({email}))
         if (Number(max_tries) >=3 ) {
-            await setValue({key:block_otp_key({email}),value:1,ttl:3*60})
+            await RedisClient.setValue({key:RedisClient.block_otp_key({email}),value:1,ttl:3*60})
             throw new AppError("you have exceeded the maximum number of tries")
         }
     
@@ -35,8 +35,8 @@ export const sendEmailOtp =async (
         await sendEmail({to:email,subject:"Welcome in Social_App",html:emailTemplate(otp)})
     
     
-        await setValue({key:otp_key({email,subject}),value:Hash({plainText:`${otp}`}),ttl:10*60})
-        await Incr(max_otp_key({email}))
+        await RedisClient.setValue({key:RedisClient.otp_key({email,subject:subject as emailEnum}),value:Hash({plainText:`${otp}`}),ttl:10*60})
+        await RedisClient.Incr(RedisClient.max_otp_key({email}))
 
 
 }

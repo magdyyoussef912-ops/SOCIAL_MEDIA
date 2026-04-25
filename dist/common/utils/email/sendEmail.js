@@ -12,7 +12,7 @@ export const sendEmail = async (mailOptions) => {
         },
     });
     const info = await transporter.sendMail({
-        from: `"SOCAIAL_APP" <${EMAIL}>`,
+        from: `"SOCIAL_APP" <${EMAIL}>`,
         ...mailOptions
     });
     console.log("Message sent:", info.messageId);

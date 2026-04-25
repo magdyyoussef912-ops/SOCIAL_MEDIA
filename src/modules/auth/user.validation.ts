@@ -28,9 +28,6 @@ export const signInSchema = {
     })
 } 
 
-export type ISignUpType = z.infer<typeof signUPSchema.body>
-
-
 
 export const confirmEmailSchema = {
     body : z.object({
@@ -40,6 +37,7 @@ export const confirmEmailSchema = {
 } 
 
 
+
 export const resendOtpSchema = {
     body : z.object({
         email : z.string().email(),
@@ -47,11 +45,13 @@ export const resendOtpSchema = {
 } 
 
 
+
 export const forgetPasswordSchema = {
     body : z.object({
         email : z.string().email(),
     })
 } 
+
 
 export const resetPasswordSchema = {
     body : z.object({
@@ -61,9 +61,12 @@ export const resetPasswordSchema = {
     })
 } 
 
+
 export const updatePasswordSchema = {
     body : z.object({
         password : z.string().regex(/^(?=.*[A-Za-z])(?=.*[^A-Za-z0-9]).{8,}$/),
         nPassword : z.string().regex(/^(?=.*[A-Za-z])(?=.*[^A-Za-z0-9]).{8,}$/)
     })
 } 
+
+

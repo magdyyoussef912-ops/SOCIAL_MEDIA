@@ -8,10 +8,10 @@ import { successResponse } from './common/utils/successResponsive.js';
 import { AppError, globalErrorHandler } from './common/utils/global-error-handler.js';
 import authRouter from './modules/auth/user.controller.js';
 import connectionDB from './DB/connectionDB.js';
-import { checkRedisConnection } from './DB/redis/connectionRedis.js';
+import RedisClient  from "./common/service/redis.service.js"
+import userRouter from './modules/users/user.controller.js';
 const app : express.Application = express();
 const port :number = +PORT;
-
 
 
 
@@ -38,7 +38,7 @@ const bootstrap =  () => {
     )
 
     connectionDB()
-    checkRedisConnection()
+    RedisClient.connect()
 
     app.listen(port,()=>{
         console.log(`Server is running on port ${port}`);
@@ -49,6 +49,7 @@ const bootstrap =  () => {
     })
 
     app.use("/auth",authRouter)
+    app.use("/user",userRouter)
 
     app.use("{demo}",(req: Request, res: Response, next: NextFunction)=>{
         throw new AppError(`404  ${req.originalUrl}  with method ${req.method} is not found`, 404) 

@@ -22,7 +22,8 @@ export const block_pass_key = ({ email }) => {
 };
 export const setValue = async ({ key, value, ttl }) => {
     try {
-        return ttl ? await redisClient.set(key, value, { EX: ttl }) : await redisClient.set(key, value);
+        const data = typeof (value) == "string" ? value : JSON.stringify(value);
+        return ttl ? await redisClient.set(key, data, { EX: ttl }) : await redisClient.set(key, data);
     }
     catch (error) {
         console.log(error, "fail to set operation");
@@ -40,7 +41,12 @@ export const update = async ({ key, value }) => {
 };
 export const get = async (key) => {
     try {
-        return await redisClient.get(key);
+        try {
+            return JSON.parse(await redisClient.get(key));
+        }
+        catch (error) {
+            return await redisClient.get(key);
+        }
     }
     catch (error) {
         console.log(error, "fail to set operation");
