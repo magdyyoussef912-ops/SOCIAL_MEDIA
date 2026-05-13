@@ -18,3 +18,9 @@ export enum likesPostEnum {
     Dislike = "Dislike"
 }
     
+
+export enum onModelEnum{
+    post = "post",
+    comment = "comment"
+}
+    

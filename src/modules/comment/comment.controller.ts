@@ -3,10 +3,19 @@ import { Authentication } from "../../common/middleware/authentication.js";
 import * as CV from "./comment.validation.js";
 import { Validation } from "../../common/middleware/validation.js";
 import commentRoutes from "./comment.service.js";
-const commentRouter = Router()
+import multerCloud from "../../common/middleware/multer.cloud.js";
+import { multer_enum } from "../../common/enum/multer.enum.js";
+const commentRouter = Router({mergeParams:true})
 
-commentRouter.post("/create-comment/:postId",Authentication,Validation(CV.createCommentSchema),commentRoutes.createComment)
-commentRouter.get("/getAllComments/:postId",Authentication,Validation(CV.getAllCommentsSchema),commentRoutes.getAllComments)
-commentRouter.delete("/delete-comment/:commentId",Authentication,Validation(CV.deleteCommentSchema),commentRoutes.deleteComment)
-commentRouter.patch("/update-comment/:commentId",Authentication,Validation(CV.updateCommentSchema), commentRoutes.updateComment)
+
+
+commentRouter.post("/",Authentication,
+    multerCloud({costume_types:multer_enum.image}).array("attachments"),
+    Validation(CV.createCommentSchema),
+    commentRoutes.createComment
+)
+
+// commentRouter.get("/",Authentication,Validation(CV.getAllCommentsSchema),commentRoutes.getAllComments)
+commentRouter.delete("/:commentId",Authentication,Validation(CV.deleteCommentSchema),commentRoutes.deleteComment)
+commentRouter.patch("/:commentId",Authentication,Validation(CV.updateCommentSchema), commentRoutes.updateComment)
 export default commentRouter

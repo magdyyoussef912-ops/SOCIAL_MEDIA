@@ -3,10 +3,10 @@ import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit'
-import { PORT } from './config/config.service.js';
+import { PORT, WHITE_LIST } from './config/config.service.js';
 import { successResponse } from './common/utils/successResponsive.js';
 import { AppError, globalErrorHandler } from './common/utils/global-error-handler.js';
-import authRouter from './modules/auth/user.controller.js';
+import authRouter from './modules/auth/auth.controller.js';
 import connectionDB from './DB/connectionDB.js';
 import RedisClient  from "./common/service/redis.service.js"
 import userRouter from './modules/users/user.controller.js';
@@ -16,6 +16,7 @@ import notificationService from './common/service/notification.service.js';
 import postRouter from './modules/post/post.controller.js';
 import commentRouter from './modules/comment/comment.controller.js';
 import adminRouter from './modules/admin/admin.controller.js';
+import mongoSanitize  from 'express-mongo-sanitize';
 const app : express.Application = express();
 const port :number = +PORT;
 
@@ -24,6 +25,17 @@ const port :number = +PORT;
 
 
 const bootstrap =  () => {
+
+    const corsOptions = {
+        origin: function(origin:string|undefined, callback:Function) {
+            if([...WHITE_LIST, undefined].includes(origin!)) {
+                callback(null, true)
+            } else {
+                callback(new AppError("Not allowed by CORS", 403))
+            }
+        },
+        credentials: true
+    }
 
     const limiter  = rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutes
@@ -37,10 +49,11 @@ const bootstrap =  () => {
     })
 
     app.use(
-    cors(),
+    cors(corsOptions),
     helmet(),
     limiter ,
-    express.json()
+    express.json(),
+    // mongoSanitize()
     )
 
     connectionDB()
@@ -118,7 +131,6 @@ const bootstrap =  () => {
     app.use("/auth",authRouter)
     app.use("/user",userRouter)
     app.use("/posts",postRouter)
-    app.use("/comments",commentRouter)
     app.use("/admin",adminRouter)
 
     app.use("{demo}",(req: Request, res: Response, next: NextFunction)=>{

@@ -1,5 +1,5 @@
 import * as z from "zod"
-import { confirmEmailSchema, forgetPasswordSchema, resendOtpSchema, resetPasswordSchema, signInSchema, signUPSchema, updatePasswordSchema } from "./user.validation.js"
+import { confirmEmailSchema, forgetPasswordSchema, resendOtpSchema, resetPasswordSchema, signInSchema, signUPSchema, updatePasswordSchema } from "./auth.validation.js"
 
 
 export type ISignUpType = z.infer<typeof signUPSchema.body>

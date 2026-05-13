@@ -35,43 +35,36 @@ class userRoutes {
 
     updateUser = async (req:Request,res:Response,next:NextFunction)=>{
         const {address,age,gender,phone,firstName,lastName} :IupdateUserType = req.body
-        
+
+        const updateData:IupdateUserType = {}
+
         if(firstName){
-            await this._userModel.findOneAndUpdate({
-                filter:{_id:req.user._id},
-                update:{firstName}
-        })
+            updateData.firstName = firstName
         }
         if(lastName){
-            await this._userModel.findOneAndUpdate({
-                filter:{_id:req.user._id},
-                update:{lastName}
-        }) 
+            updateData.lastName = lastName
         }
         if(address){
-            await this._userModel.findOneAndUpdate({
-                filter:{_id:req.user._id},
-                update:{address}
-        })
+            updateData.address = address
         }
         if(age){
-            await this._userModel.findOneAndUpdate({
-                filter:{_id:req.user._id},
-                update:{age}
-        })
+            updateData.age = age
         }
         if(gender){
-            await this._userModel.findOneAndUpdate({
-                filter:{_id:req.user._id},
-                update:{gender}
-        })
+            updateData.gender = gender
         }
         if(phone){
-            await this._userModel.findOneAndUpdate({
-                filter:{_id:req.user._id},
-                update:{phone:encrypt(phone)}
-        })
+            updateData.phone = encrypt(phone)
         }
+        if (Object.keys(updateData).length=== 0) {
+            throw new AppError("No data to update")
+        }
+        await this._userModel.findOneAndUpdate({
+            filter:{_id:req.user._id},
+            update:updateData
+        })
+        
+        
 
         
         successResponse({res,message:"done"})

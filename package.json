@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start:dev": "cross-env NODE_ENV=development concurrently \"tsc --watch\" \"nodemon dist/index.js\"",
-    "start:prod": "cross-env NODE_ENV=production concurrently \"tsc --watch\" \"nodemon dist/index.js\""
+    "start:prod": "cross-env NODE_ENV=production node dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,7 @@
     "cross-env": "^10.1.0",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
+    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^8.3.2",
     "firebase-admin": "^13.8.0",
     "google-auth-library": "^10.6.2",

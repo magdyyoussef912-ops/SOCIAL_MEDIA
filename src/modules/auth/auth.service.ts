@@ -3,10 +3,10 @@ import { successResponse } from "../../common/utils/successResponsive.js";
 import { HydratedDocument } from "mongoose";
 import  { IUser } from "../../DB/model/user.model.js";
 import { Compare, Hash } from "../../common/utils/security/Hash.security.js";
-import {  ACCESS_TOKEN_KEY_ADMIN, ACCESS_TOKEN_KEY_USER, CLIENT_ID, REFRESH_TOKEN_KEY_ADMIN, REFRESH_TOKEN_KEY_USER, SALTROUNDS } from "../../config/config.service.js";
+import {  ACCESS_TOKEN_KEY_ADMIN, ACCESS_TOKEN_KEY_USER, CLIENT_ID, PREFIX_ADMIN, PREFIX_USER, REFRESH_TOKEN_KEY_ADMIN, REFRESH_TOKEN_KEY_USER, SALTROUNDS } from "../../config/config.service.js";
 import { AppError } from "../../common/utils/global-error-handler.js";
 import { encrypt } from "../../common/utils/security/dcrypt.security.js";
-import { GenerateToken } from "../../common/utils/token.service.js";
+import { GenerateToken, VerfiyToken} from "../../common/utils/token.service.js";
 import userRepository from "../../DB/repositories/user.repository.js";
 import { sendEmail,generateOtp } from "../../common/utils/email/sendEmail.js";
 import { emailTemplate } from "../../common/utils/email/email.Template.js";
@@ -267,6 +267,63 @@ class UserService {
         successResponse({res,message:"Password Updated....."})
     }
 
+    refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+        const { authorization } = req.headers
+        console.log(authorization);
+        
+            if (!authorization) {
+                throw new AppError("Token Not Found",404)
+            }
+            const [prefix,token] : string[] = authorization.split(" ")
+                
+                if (!token) {
+                    throw new AppError("token Not Found")
+                }
+            
+                let REFRESH_TOKEN_KEY  = ""
+                if (prefix == PREFIX_USER) {
+                    REFRESH_TOKEN_KEY = REFRESH_TOKEN_KEY_USER
+                } else if (prefix == PREFIX_ADMIN) {
+                    REFRESH_TOKEN_KEY = REFRESH_TOKEN_KEY_ADMIN
+                }else {
+                    throw new AppError("inValid Prefix")
+                }
+            
+                const decoded  = VerfiyToken ({token,secretOrPublicKey:REFRESH_TOKEN_KEY})
+                if (!decoded?.id) {
+                    throw new AppError("inValid token payload")
+                }
+        
+            const user = await this._userModel.findOne({ filter: { _id: decoded.id } })
+            if (!user) {
+                throw new AppError("User Not Found", 409)
+            }
+
+            const revoked_token_value = await this._redisCkient.get(
+                this._redisCkient.revoked_token({ userId: decoded.id!, jti: decoded.jti! })
+            )
+            if (revoked_token_value) {
+                throw new AppError("Token revoked")
+            }
+            const jwtid = randomUUID()
+            const access_token = GenerateToken({
+                payload: {
+                    id: user._id,
+                    email: user.email
+                },
+                secretOrPrivateKey:user.role == RoleEnum.USER ? ACCESS_TOKEN_KEY_USER : ACCESS_TOKEN_KEY_ADMIN, 
+                options: {
+                    expiresIn: 60*60,
+                    jwtid
+                }
+            })
+
+    
+
+        successResponse({ res, message: "Token refreshed successfully", data:  {access_token}  })
+
+
+    }
 
     logout = async (req: Request, res: Response, next: NextFunction) => {
         const {flag} = req.query

@@ -5,9 +5,11 @@ import { multer_enum, MulterStorageType } from "../../common/enum/multer.enum.js
 import postRoutes from "./post.service.js";
 import * as PV from "./post.validation.js"
 import { Validation } from "../../common/middleware/validation.js";
+import commentRouter from "../comment/comment.controller.js";
 
 const postRouter = Router() 
 
+postRouter.use("/:postId/comments{/:commentId/replies}",commentRouter)
 
 postRouter.post("/createPost",
   Authentication, 

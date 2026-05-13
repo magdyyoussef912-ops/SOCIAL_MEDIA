@@ -13,7 +13,7 @@ import { MulterStorageType } from "../../common/enum/multer.enum.js";
 import notificationService from "../../common/service/notification.service.js";
 import { AvailabiltyEnum, likesPostEnum } from "../../common/enum/post.enum.js";
 import { AvailabiltyPost } from "../../common/utils/post.utils.js";
-
+import { populate } from "dotenv";
 
 class postRoutes {
     private readonly _userModel = new userRepository() 
@@ -173,13 +173,26 @@ class postRoutes {
             page: + req?.query?.page! ,
             limit: + req?.query?.limit!,
             search:{
-                ...AvailabiltyPost,
+                $or:[...AvailabiltyPost(req)],
                 ...(req.query?.search ? {
                     $or:[
                         { content : { $regex : req.query?.search , $options : "i" } }
                     ]
                 } :{})
-            }
+            },
+            populate:[
+                {
+                    path:"comments",
+                    match:{
+                        commentID:{$exists:false}
+                    },
+                    populate:[
+                        {
+                            path:"replies"
+                        }
+                    ]
+                }
+            ]
         })
 
       if (posts?.Meta.totalDoc === 0) {
@@ -194,7 +207,7 @@ class postRoutes {
       const _id = new Types.ObjectId(postId as string) 
       
       const post = await this._postModel.findOne({
-        filter:{ _id,createdBy:req?.user?._id } 
+        filter:{ _id} 
       }) 
       if (!post) {
         throw new AppError("Post not found")
@@ -202,7 +215,6 @@ class postRoutes {
       
       successResponse({res,message:"Post fetched successfully",data:post}) 
     }
-
 
     likePost = async (req:Request,res:Response,next:NextFunction)=>{
       const {postId}  = req.params
@@ -221,7 +233,10 @@ class postRoutes {
         }
       
       const post = await this._postModel.findOneAndUpdate({
-        filter:{ _id , ...AvailabiltyPost } ,
+          filter:{
+             $or: [...AvailabiltyPost(req)] ,
+              _id 
+            } ,
         update: updateQuery
       }) 
 
@@ -238,12 +253,8 @@ class postRoutes {
       const _id = new Types.ObjectId(postId as string)
       
       const post = await this._postModel.findOneAndDelete({
-            filter:{ _id } 
-        })  
-
-      if (post?.createdBy  !== req.user?._id) {
-          throw new AppError("You are not authorized to delete this post")
-      }   
+            filter:{ _id , createdBy:req.user?._id } 
+      })
       if (!post) {
         throw new AppError("Post not found")
       }  

@@ -20,8 +20,8 @@ abstract class baseRepository<Tdocument> {
         return this.model.findById(id)
     }
 
-    async findOne ({filter,projection}:{filter: QueryFilter<Tdocument>,projection?: ProjectionType<Tdocument>}):Promise< HydratedDocument<Tdocument>| null>{
-        return this.model.findOne(filter,projection)
+    async findOne ({filter,projection,options}:{filter: QueryFilter<Tdocument>,projection?: ProjectionType<Tdocument>,options?: QueryOptions<Tdocument>}):Promise< HydratedDocument<Tdocument>| null>{
+        return this.model.findOne(filter,projection,options)
     }
 
     async find ({
@@ -107,13 +107,15 @@ abstract class baseRepository<Tdocument> {
         limit,
         sort,
         populate,
-        search
+        search,
+        options
     }:{
         page?:number,
         limit?:number,
         sort?:any,
         populate?:any,
-        search?:QueryFilter <T>
+        search?:QueryFilter <T>,
+        options?: QueryOptions<T>
     }){
         page = +page!
         limit = +limit!
@@ -124,7 +126,7 @@ abstract class baseRepository<Tdocument> {
         const skip = (page - 1 ) * limit
 
         const [data,totalDoc] = await Promise.all([
-            await this.model.find({...search ?? {}}).limit(limit).skip(skip).sort(sort).populate(populate).exec(),
+            await this.model.find({...search ?? {}} ,null,{...options ??{}}).limit(limit).skip(skip).sort(sort).populate(populate).exec(),
             await this.model.countDocuments({...search ?? {}})
         ])
 
