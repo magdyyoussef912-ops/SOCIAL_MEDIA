@@ -8,7 +8,7 @@ import { AppError } from "../../common/utils/global-error-handler.js";
 import { HydratedDocument, Types } from "mongoose";
 import postRepository from "../../DB/repositories/post.repository.js";
 import commentRepository from "../../DB/repositories/comment.repository.js";
-import { IcreateCommentType } from "./comment.dto.js";
+import { IcreateCommentType, IupdateCommentType } from "./comment.dto.js";
 import { AvailabiltyPost } from "../../common/utils/post.utils.js";
 import { AllowCommentEnum, onModelEnum } from "../../common/enum/post.enum.js";
 import redisClient from "../../common/service/redis.service.js";
@@ -135,19 +135,74 @@ class commentRoutes {
         successResponse({res,message:"Comment created successfully",data:comment})
        
     }
-    updateComment = async (req:Request,res:Response,next:NextFunction)=>{
+
+    updateContentAndSettings = async (req:Request,res:Response,next:NextFunction)=>{
         const {commentId}  = req.params 
-        const _id = new Types.ObjectId (commentId as string) 
-        const {content} = req.body
+        const {content,tags} :IupdateCommentType = req.body
         
-        const comment = await this._commentModel.findOneAndUpdate({
-            filter:{_id,createdBy:req?.user?._id},
-            update:{content}
+        const comment = await this._commentModel.findOne({
+            filter:{_id:commentId,createdBy:req?.user?._id}
         })
+        
         if (!comment) {
             throw new AppError("Comment not found")
         }
+
+        if(content){
+            comment.content = content
+        }
+
+        if (tags) {
+            let mentions : Types.ObjectId[] = []
+            let FCMTokens : string[] = []
+
+            const mentionsTags = await this._userModel.find({
+                filter:{_id:{ $in: tags }}
+            })
+            if (mentionsTags.length !== tags.length) {
+                throw new AppError("Invalid tags")
+            }
+            for (const tag of mentionsTags) {
+                if (tag._id.toString() === req.user?._id.toString()) {
+                    throw new AppError("you can't mention your self")
+                } 
+                mentions.push(tag?._id);
+                (await this._redisClient.getFCMs({userId:tag?._id})).map((token:string)=>{
+                    FCMTokens.push(token) 
+                })  
+            }
+            comment.tags = mentions
+        }
+        await comment.save()
+        
+
         successResponse({res,message:"Comment updated successfully",data:comment})
+    }
+    
+    updateAttachments = async (req:Request,res:Response,next:NextFunction)=>{
+        const {commentId} = req.params
+        
+        const comment = await this._commentModel.findOne({
+            filter:{ _id:commentId,createdBy:req?.user?._id }
+        })  
+
+        if (!comment) {
+            throw new AppError("Comment not found")
+        }
+        if (req?.files) {
+            await this._S3Bucket.deleteFiles(comment?.attachments as string[])
+            let urls :string[]=[]
+            let folderId = randomUUID() 
+            urls = await this._S3Bucket.uploadFiles({
+                files:req.files as Express.Multer.File[],
+                path:`users/${req?.user?._id}/comments/${comment?.folderId}/attachments/${folderId}`,
+                storage_type:MulterStorageType.MEMORY
+            }) as unknown as string[] 
+            comment.attachments = urls 
+            comment.folderId = folderId
+            await comment.save()
+        } 
+        successResponse({res,message:"Comment updated successfully",data:comment}) 
     }
     
     deleteComment = async (req:Request,res:Response,next:NextFunction)=>{

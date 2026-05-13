@@ -58,7 +58,18 @@ export const updateCommentSchema = {
     params:z.object({
         commentId:generalRoles.id
     }),
-    body:z.object({
-        content:z.string()
+   body:z.object({
+        content:z.string().optional(),
+        tags:z.array(generalRoles.id).optional()  
+    }).superRefine((args,ctx)=>{
+        if (!args.content && !args.tags?.length) {
+            ctx.addIssue({
+                code:"custom",
+                message:"Post must have content or tags or allowComents or availabilty",
+                path:["content"]
+            })
+        }
     })
 } 
+
+
